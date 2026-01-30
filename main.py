@@ -10,6 +10,7 @@ class MCF_plugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
 
+
     async def initialize(self):
         """可选择实现异步的插件初始化方法，当实例化该插件类之后会自动调用该方法。"""
         logger.info("Mooncell Finder插件已初始化")
