@@ -1,0 +1,9 @@
+name: astrbot_plugin_mooncell_finder  # 这里改成你的项目名
+channels:
+  - conda-forge       # 推荐优先使用 conda-forge，包更全更新
+  - defaults
+dependencies:
+  - python=3.13.9       # 请修改为你当前 uv 项目使用的 Python 版本
+  - pip               # 必须安装 pip，用于处理 conda 仓库里没有的包
+  - pip:
+      - -r requirements.txt  # 让 conda 自动读取刚才导出的文件
