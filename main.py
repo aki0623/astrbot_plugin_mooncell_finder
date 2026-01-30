@@ -18,7 +18,7 @@ class MCF_plugin(Star):
         logger.info("Mooncell Finder插件已初始化")
 
     async def _send_msg_func(self,event,image_list,key,keyword):
-        """消息发送指令""" 
+        """消息发送指令,用于发送合并转发消息。""" 
         if keyword:
             msg1 = f"正在查找{key}:{keyword}。" # 发送一条纯文本消息
             msg2 = f"已为您找到{key}-{keyword}的详细信息如下："
@@ -71,7 +71,7 @@ class MCF_plugin(Star):
         
     @filter.command("MCF从者")
     async def MCF_servant(self, event: AstrMessageEvent):
-        """从者查询指令""" # 这是 handler 的描述，将会被解析方便用户了解插件内容。建议填写。
+        """从者查询指令,用于查询FGO相关的从者信息。""" # 这是 handler 的描述，将会被解析方便用户了解插件内容。建议填写。
         message_str = event.message_str # 用户发的纯文本消息字符串
         message_chain = event.get_messages() # 用户所发的消息的消息链 # from astrbot.api.message_components import *
         logger.info(message_chain)
@@ -87,7 +87,7 @@ class MCF_plugin(Star):
           
     @filter.command("MCF礼装")
     async def MCF_craft(self, event: AstrMessageEvent):
-        """礼装查询指令""" # 这是 handler 的描述，将会被解析方便用户了解插件内容。建议填写。
+        """礼装查询指令,用于查询FGO相关的礼装信息。""" # 这是 handler 的描述，将会被解析方便用户了解插件内容。建议填写。
         message_str = event.message_str # 用户发的纯文本消息字符串
         message_chain = event.get_messages() # 用户所发的消息的消息链 # from astrbot.api.message_components import *
         logger.info(message_chain)
@@ -103,7 +103,7 @@ class MCF_plugin(Star):
     
     @filter.command("MCF纹章")
     async def MCF_ccode(self, event: AstrMessageEvent):
-        """纹章查询指令""" # 这是 handler 的描述，将会被解析方便用户了解插件内容。建议填写。
+        """纹章查询指令,用于查询FGO相关的纹章信息。""" # 这是 handler 的描述，将会被解析方便用户了解插件内容。建议填写。
         message_str = event.message_str # 用户发的纯文本消息字符串
         message_chain = event.get_messages() # 用户所发的消息的消息链 # from astrbot.api.message_components import *
         logger.info(message_chain)
@@ -119,7 +119,7 @@ class MCF_plugin(Star):
     
     @filter.command("MCF特性")
     async def MCF_event(self, event: AstrMessageEvent):
-        """特性查询指令""" # 这是 handler 的描述，将会被解析方便用户了解插件内容。建议填写。
+        """特性查询指令,用于查询FGO相关的特性信息。""" # 这是 handler 的描述，将会被解析方便用户了解插件内容。建议填写。
         message_str = event.message_str # 用户发的纯文本消息字符串
         message_chain = event.get_messages() # 用户所发的消息的消息链 # from astrbot.api.message_components import *
         logger.info(message_chain)
