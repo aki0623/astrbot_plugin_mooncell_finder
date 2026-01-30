@@ -4,7 +4,9 @@ from astrbot.api import logger
 from astrbot.core.message.components import Image
 from astrbot.api.message_components import Node, Nodes, Plain
 from .core.servant import *
-
+from .core.craft import *
+from .core.ccode import *
+from .core.trait import *
 @register("Mooncell Finder", "akidesuwa", "mooncell 网页查询", "0.1")
 class MCF_plugin(Star):
     def __init__(self, context: Context):
@@ -15,36 +17,24 @@ class MCF_plugin(Star):
         """可选择实现异步的插件初始化方法，当实例化该插件类之后会自动调用该方法。"""
         logger.info("Mooncell Finder插件已初始化")
 
-    # 注册指令的装饰器。指令名为 helloworld。注册成功后，发送 `/helloworld` 就会触发这个指令，并回复 `你好, {user_name}!`
-    @filter.command("helloworld")
-    async def helloworld(self, event: AstrMessageEvent):
-        """这是一个 helloworld 指令""" # 这是 handler 的描述，将会被解析方便用户了解插件内容。建议填写。
-        user_name = event.get_sender_name()
-        message_str = event.message_str # 用户发的纯文本消息字符串
-        message_chain = event.get_messages() # 用户所发的消息的消息链 # from astrbot.api.message_components import *
-        logger.info(message_chain)
-        yield event.plain_result(f"Hello, {user_name}, 你发了 {message_str}!") # 发送一条纯文本消息
+    async def _send_msg_func(self,event,image_list,key,keyword):
+        """消息发送指令""" 
+        if keyword:
+            msg1 = f"正在查找{key}:{keyword}。" # 发送一条纯文本消息
+            msg2 = f"已为您找到{key}-{keyword}的详细信息如下："
+        else:
+            if key is "特性":
+                msg1 = f"正在查找【特性一览】表格。" # 发送一条纯文本消息
+                msg2 = f"已为您找到【特性一览】表格如下："
         
-    @filter.command("MCF从者")
-    async def MCF_servant(self, event: AstrMessageEvent):
-        """从者查询指令""" # 这是 handler 的描述，将会被解析方便用户了解插件内容。建议填写。
-        user_name = event.get_sender_name()
-        message_str = event.message_str # 用户发的纯文本消息字符串
-        message_chain = event.get_messages() # 用户所发的消息的消息链 # from astrbot.api.message_components import *
-        logger.info(message_chain)
-        # 1. 按照 "MCF从者 " (包含空格) 分割
-        # maxsplit=1 保证如果 XXX 里面有空格，不会被切碎
-        keyword = message_str.split("MCF从者 ", 1)[1]
-        yield event.plain_result(f"正在查找从者:{keyword}。") # 发送一条纯文本消息
-        
-        image_list = await find_in_mooncell_servant_2_imglist(keyword)
+        yield event.plain_result(msg1)
         # 准备合并转发的节点列表
         nodes = []
         # 1. 创建第一个节点：文字说明
         text_node = Node(
             uin=event.get_self_id(),
             name="Mooncell 查找结果",
-            content=[Plain(f"已为您找到从者【{keyword}】的详细信息如下：")]
+            content=[Plain(msg2)]
         )
         nodes.append(text_node)
         # 2. 遍历图片并放入节点
@@ -71,30 +61,77 @@ class MCF_plugin(Star):
             nodes.append(Node(
                 uin=event.get_self_id(),
                 name="查找失败",
-                content=[Plain("抱歉，未能在 Mooncell 找到该从者的相关截图。")]
+                content=[Plain(f"抱歉，未能在 Mooncell 找到该{key}的相关截图。")]
             ))
 
         # 3. 封装并发送合并转发消息
         merge_forward_message = Nodes(nodes)
         yield event.chain_result([merge_forward_message])
         yield event.plain_result(f"查找完毕。")
-    # @filter.command("MCF礼装")
-    # async def MCF_concept(self, event: AstrMessageEvent):
-    #     """礼装查询指令""" # 这是 handler 的描述，将会被解析方便用户了解插件内容。建议填写。
-    #     user_name = event.get_sender_name()
-    #     message_str = event.message_str # 用户发的纯文本消息字符串
-    #     message_chain = event.get_messages() # 用户所发的消息的消息链 # from astrbot.api.message_components import *
-    #     logger.info(message_chain)
-    #     yield event.plain_result(f"功能未完成。。。。") # 发送一条纯文本消息
         
-    # @filter.command("MCF活动")
-    # async def MCF_event(self, event: AstrMessageEvent):
-    #     """活动查询指令""" # 这是 handler 的描述，将会被解析方便用户了解插件内容。建议填写。
-    #     user_name = event.get_sender_name()
-    #     message_str = event.message_str # 用户发的纯文本消息字符串
-    #     message_chain = event.get_messages() # 用户所发的消息的消息链 # from astrbot.api.message_components import *
-    #     logger.info(message_chain)
-    #     yield event.plain_result(f"功能未完成。。。。") # 发送一条纯文本消息
+    @filter.command("MCF从者")
+    async def MCF_servant(self, event: AstrMessageEvent):
+        """从者查询指令""" # 这是 handler 的描述，将会被解析方便用户了解插件内容。建议填写。
+        message_str = event.message_str # 用户发的纯文本消息字符串
+        message_chain = event.get_messages() # 用户所发的消息的消息链 # from astrbot.api.message_components import *
+        logger.info(message_chain)
+        keyword = message_str.replace("MCF从者", "", 1).strip()
+        if keyword:
+            image_list = await find_in_mooncell_servant_2_imglist(keyword)
+            logger.info(f"得到image_list")
+            async for msg in self._send_msg_func(event, image_list, "从者", keyword):
+                yield msg
+            logger.info(f"成功发送")
+        else:
+            yield event.plain_result(f"从者查询关键词不可为空。")
+          
+    @filter.command("MCF礼装")
+    async def MCF_craft(self, event: AstrMessageEvent):
+        """礼装查询指令""" # 这是 handler 的描述，将会被解析方便用户了解插件内容。建议填写。
+        message_str = event.message_str # 用户发的纯文本消息字符串
+        message_chain = event.get_messages() # 用户所发的消息的消息链 # from astrbot.api.message_components import *
+        logger.info(message_chain)
+        keyword = message_str.replace("MCF礼装", "", 1).strip()
+        if keyword:
+            image_list = await find_in_mooncell_ce_2_imglist(keyword)
+            logger.info(f"得到image_list")
+            async for msg in self._send_msg_func(event, image_list, "礼装", keyword):
+                yield msg
+            logger.info(f"成功发送")
+        else:
+            yield event.plain_result(f"礼装查询关键词不可为空。")
+    
+    @filter.command("MCF纹章")
+    async def MCF_ccode(self, event: AstrMessageEvent):
+        """纹章查询指令""" # 这是 handler 的描述，将会被解析方便用户了解插件内容。建议填写。
+        message_str = event.message_str # 用户发的纯文本消息字符串
+        message_chain = event.get_messages() # 用户所发的消息的消息链 # from astrbot.api.message_components import *
+        logger.info(message_chain)
+        keyword = message_str.replace("MCF纹章", "", 1).strip()
+        if keyword:
+            image_list = await find_in_mooncell_cc_2_imglist(keyword)
+            logger.info(f"得到image_list")
+            async for msg in self._send_msg_func(event, image_list, "纹章", keyword):
+                yield msg
+            logger.info(f"成功发送")
+        else:
+            yield event.plain_result(f"纹章查询关键词不可为空。")
+    
+    @filter.command("MCF特性")
+    async def MCF_event(self, event: AstrMessageEvent):
+        """特性查询指令""" # 这是 handler 的描述，将会被解析方便用户了解插件内容。建议填写。
+        message_str = event.message_str # 用户发的纯文本消息字符串
+        message_chain = event.get_messages() # 用户所发的消息的消息链 # from astrbot.api.message_components import *
+        logger.info(message_chain)
+        keyword = message_str.replace("MCF特性", "", 1).strip()
+        if keyword:
+            image_list = await find_in_mooncell_trait_2_imglist(keyword)
+        else:
+            image_list = await find_in_mooncell_trait_2_imglist_table("属性：秩序·善")
+        logger.info(f"得到image_list")
+        async for msg in self._send_msg_func(event, image_list, "特性", keyword):
+            yield msg
+        logger.info(f"成功发送")
         
 
     async def terminate(self):

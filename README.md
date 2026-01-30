@@ -1,4 +1,4 @@
-# helloworld
+# MOONCELL Finder for Astrbot
 
 AstrBot 插件模板
 
