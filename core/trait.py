@@ -250,6 +250,6 @@ async def find_in_mooncell_trait_2_imglist(keyword: str):
 
 if __name__ == "__main__":
     # 测试代码
-    # asyncio.run(find_in_mooncell_trait_2_imglist("属性：秩序·善"))
-    # asyncio.run(find_in_mooncell_trait_2_imglist_table("属性：秩序·善"))
+    asyncio.run(find_in_mooncell_trait_2_imglist("属性：秩序·善"))
+    asyncio.run(find_in_mooncell_trait_2_imglist_table("属性：秩序·善"))
     pass

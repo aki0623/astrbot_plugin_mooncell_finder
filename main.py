@@ -7,7 +7,8 @@ from .core.servant import *
 from .core.craft import *
 from .core.ccode import *
 from .core.trait import *
-@register("Mooncell Finder", "akidesuwa", "mooncell 网页查询", "0.1")
+
+@register("Mooncell Finder", "akidesuwa", "mooncell 网页查询", "1.0")
 class MCF_plugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
@@ -20,11 +21,11 @@ class MCF_plugin(Star):
     async def _send_msg_func(self,event,image_list,key,keyword):
         """消息发送指令,用于发送合并转发消息。""" 
         if keyword:
-            msg1 = f"正在查找{key}:{keyword}。" # 发送一条纯文本消息
+            msg1 = f"正在查找{key}:{keyword}。"
             msg2 = f"已为您找到{key}-{keyword}的详细信息如下："
         else:
             if key is "特性":
-                msg1 = f"正在查找【特性一览】表格。" # 发送一条纯文本消息
+                msg1 = f"正在查找【特性一览】表格。" 
                 msg2 = f"已为您找到【特性一览】表格如下："
         
         yield event.plain_result(msg1)
@@ -136,3 +137,4 @@ class MCF_plugin(Star):
 
     async def terminate(self):
         """可选择实现异步的插件销毁方法，当插件被卸载/停用时会调用。"""
+        logger.info("Mooncell Finder插件已停用")
