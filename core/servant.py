@@ -47,7 +47,10 @@ async def find_in_mooncell_servant_2_imglist(keyword: str):
     logger.info(f"[-] 正在启动浏览器搜索: {keyword} ...")
     
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await p.chromium.launch(
+            headless=True,
+            args=['--no-proxy-server']  # <--- 加上这一行，强制不走代理
+            )
         context = await browser.new_context(
             viewport={"width": 1280, "height": 1200}, 
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -154,8 +157,6 @@ async def find_in_mooncell_servant_2_imglist(keyword: str):
             
         except Exception as e:
             logger.info(f"[x] 发生错误: {e}")
-            import traceback
-            traceback.logger.info_exc()
         finally:
             await browser.close()
         

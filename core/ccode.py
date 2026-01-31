@@ -120,8 +120,6 @@ async def find_in_mooncell_cc_2_imglist(keyword: str):
             
         except Exception as e:
             logger.info(f"[x] 发生错误: {e}")
-            import traceback
-            traceback.print_exc()
         finally:
             await browser.close()
         

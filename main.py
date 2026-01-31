@@ -3,12 +3,9 @@ from astrbot.api.star import Context, Star, register
 from astrbot.api import logger
 from astrbot.core.message.components import Image
 from astrbot.api.message_components import Node, Nodes, Plain
-from .core.servant import *
-from .core.craft import *
-from .core.ccode import *
-from .core.trait import *
-
-@register("Mooncell Finder", "akidesuwa", "mooncell 网页查询", "1.0")
+from .core import servant, craft, ccode, trait
+import io
+@register("Mooncell Finder", "akidesuwa", "mooncell 网页查询", "0.9")
 class MCF_plugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
@@ -78,7 +75,7 @@ class MCF_plugin(Star):
         logger.info(message_chain)
         keyword = message_str.replace("MCF从者", "", 1).strip()
         if keyword:
-            image_list = await find_in_mooncell_servant_2_imglist(keyword)
+            image_list = await servant.find_in_mooncell_servant_2_imglist(keyword)
             logger.info(f"得到image_list")
             async for msg in self._send_msg_func(event, image_list, "从者", keyword):
                 yield msg
@@ -94,7 +91,7 @@ class MCF_plugin(Star):
         logger.info(message_chain)
         keyword = message_str.replace("MCF礼装", "", 1).strip()
         if keyword:
-            image_list = await find_in_mooncell_ce_2_imglist(keyword)
+            image_list = await craft.find_in_mooncell_ce_2_imglist(keyword)
             logger.info(f"得到image_list")
             async for msg in self._send_msg_func(event, image_list, "礼装", keyword):
                 yield msg
@@ -110,7 +107,7 @@ class MCF_plugin(Star):
         logger.info(message_chain)
         keyword = message_str.replace("MCF纹章", "", 1).strip()
         if keyword:
-            image_list = await find_in_mooncell_cc_2_imglist(keyword)
+            image_list = await ccode.find_in_mooncell_cc_2_imglist(keyword)
             logger.info(f"得到image_list")
             async for msg in self._send_msg_func(event, image_list, "纹章", keyword):
                 yield msg
@@ -126,9 +123,9 @@ class MCF_plugin(Star):
         logger.info(message_chain)
         keyword = message_str.replace("MCF特性", "", 1).strip()
         if keyword:
-            image_list = await find_in_mooncell_trait_2_imglist(keyword)
+            image_list = await trait.find_in_mooncell_trait_2_imglist(keyword)
         else:
-            image_list = await find_in_mooncell_trait_2_imglist_table("属性：秩序·善")
+            image_list = await trait.find_in_mooncell_trait_2_imglist_table("属性：秩序·善")
         logger.info(f"得到image_list")
         async for msg in self._send_msg_func(event, image_list, "特性", keyword):
             yield msg

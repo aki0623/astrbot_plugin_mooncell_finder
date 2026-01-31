@@ -1,6 +1,9 @@
 # MOONCELL Finder for Astrbot
 
 AstrBot 插件，用于查询 FGO 相关的从者、礼装、纹章和特性信息。
+## 说明：
+本插件仍然处于测试阶段，请您谨慎使用。
+后续将着重在 功能实现的安全性、代码规范性等方面进行完善
 
 ## 功能特性
 
@@ -49,7 +52,7 @@ astrbot_plugin_mooncell_finder/
 ## 插件信息
 
 - **名称**：astrbot_plugin_mooncell_finder
-- **版本**：v1.0
+- **版本**：v0.9
 - **作者**：akidesuwa
 - **描述**：MOONCELL机器人
 

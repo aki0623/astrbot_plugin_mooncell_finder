@@ -111,7 +111,7 @@ async def capture_section_smart(page, prefix, section_filename, start_text, stop
 
         // 先把起始标题加进去
         addEl(startHeader);
-
+ 
         let curr = startHeader.nextElementSibling;
         while (curr) {{
             // 2. 检查是否遇到停止标志
