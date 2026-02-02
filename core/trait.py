@@ -1,10 +1,13 @@
 import asyncio
 import io
-import sys
+
 from playwright.async_api import async_playwright
-# 假设这是你的基础库
-from .base import * 
+
 from astrbot.api import logger
+
+# 假设这是你的基础库
+from .base import *
+
 
 # === 截图模块：特性一览表格 ===
 async def screenshot_trait_table(page):
@@ -13,10 +16,10 @@ async def screenshot_trait_table(page):
         # 策略：寻找 class 为 wikitable 且包含文本 "特性一览" 的表格
         # Mooncell 的属性页面中，这个表格包含了所有该属性相关的交叉特性
         target_table = page.locator("table.wikitable").filter(has_text="特性一览").first
-        
+
         if await target_table.count() > 0:
             await target_table.scroll_into_view_if_needed()
-            
+
             # === 关键步骤：强制展开折叠内容 ===
             # 你的 HTML 显示行带有 id="mw-customcollapsible-000" 和 class="mw-collapsible"
             # 默认情况下它们可能是折叠的 (display: none)。
@@ -37,12 +40,12 @@ async def screenshot_trait_table(page):
                     spans.forEach(s => s.style.display = 'none');
                 }
             }""", await target_table.element_handle())
-            
+
             # 等待渲染更新（防止展开动画未完成）
             await asyncio.sleep(0.5)
-            
-            img_bytes = await target_table.screenshot() 
-            logger.info(f"[√] 特性一览截图完成")
+
+            img_bytes = await target_table.screenshot()
+            logger.info("[√] 特性一览截图完成")
             return LibImage.open(io.BytesIO(img_bytes))
         else:
             logger.info("[!] 未找到特性一览表格")
@@ -55,7 +58,7 @@ async def find_in_mooncell_trait_2_imglist_table(keyword: str):
     查找属性/特性的总函数
     :param keyword: 搜索字段（例如 "秩序·善", "龙", "神性"）
     '''
-    
+
     # Mooncell 的属性页面通常是以 "属性：" 或 "特性：" 开头，或者直接是特性名
     # 这里建议在调用前处理一下关键词，或者直接搜索让 Wiki 重定向
     logger.info(f"[-] 正在启动浏览器搜索特性: {keyword} ...")
@@ -70,9 +73,9 @@ async def find_in_mooncell_trait_2_imglist_table(keyword: str):
                 return
             url = result
             logger.info(f"[-] 访问 URL: {url}")
-            
+
             await page.goto(url, wait_until="domcontentloaded", timeout=60000)
-            
+
             try:
                 await page.wait_for_selector("#bodyContent", state="visible", timeout=10000)
             except:
@@ -81,10 +84,10 @@ async def find_in_mooncell_trait_2_imglist_table(keyword: str):
             # 4. 页面清洗
             logger.info("[-] 正在处理页面结构...")
             await clean_page(page)
-            
+
             # 5. 预滚动
             await pre_scroll(page)
-            
+
             # === 执行截图任务 ===
             trait_img = await screenshot_trait_table(page)
             if trait_img:
@@ -94,7 +97,7 @@ async def find_in_mooncell_trait_2_imglist_table(keyword: str):
             logger.info(f"[x] 发生错误: {e}")
         finally:
             await browser.close()
-        
+
         return img_list
 
 # === 截图模块：特性页面特定部分 ===
@@ -155,13 +158,13 @@ async def screenshot_trait_sections(page):
             const images = document.querySelectorAll('img[loading="lazy"]');
             images.forEach(img => img.removeAttribute('loading'));
         }""")
-        
+
         # 等待页面重绘和图片加载
         await asyncio.sleep(0.8)
 
         # 定位目标表格
         target_table = page.locator("#tabber-持有该属性的从者 table.wikitable.logo").first
-        
+
         # 容错：如果找不到特定 ID，尝试模糊匹配
         if await target_table.count() == 0:
             target_table = page.locator("table.wikitable.logo").filter(has_text="Saber").first
@@ -170,13 +173,13 @@ async def screenshot_trait_sections(page):
             await target_table.scroll_into_view_if_needed()
             # 再次等待，确保底部文字渲染清晰
             await asyncio.sleep(0.5)
-            
+
             img_bytes = await target_table.screenshot()
             img_list.append(LibImage.open(io.BytesIO(img_bytes)))
             logger.info("[√] 完整从者列表截图完成")
         else:
             logger.info("[!] 未找到从者列表表格")
-            
+
     except Exception as e:
         logger.info(f"[x] 从者列表截图失败: {e}")
 
@@ -194,15 +197,15 @@ async def find_in_mooncell_trait_2_imglist(keyword: str):
             url = result
             logger.info(f"[-] 访问 URL: {url}")
             await page.goto(url, wait_until="domcontentloaded", timeout=60000)
-            
+
             # 基础页面清洗
             await clean_page(page)
-            
+
             # 截图
             screenshots = await screenshot_trait_sections(page)
             if screenshots:
                 img_list.extend(screenshots)
-                
+
         except Exception as e:
             logger.info(f"[x] 发生错误: {e}")
         finally:
