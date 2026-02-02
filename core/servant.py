@@ -79,14 +79,14 @@ async def find_in_mooncell_servant_2_imglist(keyword: str):
             () => {
                 // 1. 强制展开所有 Tabber
                 document.querySelectorAll('.tabber__panel').forEach(tab => {
-                    tab.style.display = 'block'; 
+                    tab.style.display = 'block';
                     tab.style.opacity = '1';
-                    tab.classList.remove('tabber__panel--hidden'); 
+                    tab.classList.remove('tabber__panel--hidden');
                 });
-                
+
                 // 2. 移除 Tab 父容器固定高度
                 document.querySelectorAll('.tabber__section').forEach(sec => {
-                    sec.style.height = 'auto'; 
+                    sec.style.height = 'auto';
                     sec.style.maxHeight = 'none';
                 });
 

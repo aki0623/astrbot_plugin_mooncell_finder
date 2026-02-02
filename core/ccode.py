@@ -33,7 +33,7 @@ async def screenshot_cc_main_table(page, safe_name):
                         div.style.overflowY = 'visible'; // 移除滚动条
                         div.style.height = 'auto';      // 自适应高度
                     });
-                    
+
                     // 2. 确保中文解说可见 (通常以 _1 结尾的是中文)
                     const cnDivs = table.querySelectorAll('div[class*="_1"]');
                     cnDivs.forEach(div => div.style.display = 'block');
@@ -78,7 +78,7 @@ async def find_in_mooncell_cc_2_imglist(keyword: str):
 
             try:
                 await page.wait_for_selector("#bodyContent", state="visible", timeout=10000)
-            except:
+            except:  # noqa: E722
                 logger.info("[!] 警告: 等待内容区域超时")
 
             # 4. 页面清洗 (隐藏广告和无关元素)

@@ -4,10 +4,13 @@ import sys
 
 import httpx
 
+from astrbot.api import logger
+
 # 1. 先保存原始路径，确保能找到真正的第三方库
 original_path = sys.path.copy()
 # 2. 导入真正的 Pillow 库并起别名
-if "" in sys.path: sys.path.remove("") # 临时移除当前目录，防止干扰
+if "" in sys.path:
+    sys.path.remove("") # 临时移除当前目录，防止干扰
 from PIL import Image as LibImage
 
 
@@ -112,7 +115,7 @@ async def clean_page(page):
         selectors.forEach(s => {
             document.querySelectorAll(s).forEach(e => e.style.display = 'none');
         });
-        
+
         const content = document.querySelector('#content');
         if(content) {
             content.style.marginLeft = '0px';
@@ -150,12 +153,12 @@ async def capture_section_smart(page, prefix, section_filename, start_text, stop
         if (!startHeader) {
             startHeader = headers.find(h => h.innerText.includes(startText));
         }
-        
+
         if (!startHeader) return null;
 
         const capturedNodes = [];
         const capturedIds = [];
-        
+
         // 辅助：添加元素ID到列表
         const addEl = (node) => {
             if (node.offsetParent !== null) { // 确保可见
@@ -167,7 +170,7 @@ async def capture_section_smart(page, prefix, section_filename, start_text, stop
 
         // 先把起始标题加进去
         addEl(startHeader);
- 
+
         let curr = startHeader.nextElementSibling;
         while (curr) {
             // 2. 检查是否遇到停止标志
@@ -176,7 +179,7 @@ async def capture_section_smart(page, prefix, section_filename, start_text, stop
             }
 
             // 3. 收集目标元素 (H3标题 或 表格)
-            
+
             // 如果是 H3 标题 (例如"灵基再临")，且不在停止列表中
             if (curr.tagName === 'H3' && !stopLevels.includes('H3')) {
                 addEl(curr);
@@ -246,8 +249,8 @@ async def capture_section_smart(page, prefix, section_filename, start_text, stop
             if await loc.is_visible():
                 img_bytes = await loc.screenshot()
                 captured_images.append(LibImage.open(io.BytesIO(img_bytes)))
-        except:
-            continue
+        except Exception as e:
+            logger.info(f"[x] 截图失败: {e}")
 
     if not captured_images:
         return None

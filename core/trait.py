@@ -32,7 +32,7 @@ async def screenshot_trait_table(page):
                     row.style.display = 'table-row';
                     row.classList.remove('mw-collapsed');
                 });
-                
+
                 // 2. (可选) 隐藏原本的 [展开/折叠] 按钮文字，让截图更干净
                 const toggle = table.querySelector('.mw-customtoggle');
                 if(toggle) {
@@ -127,9 +127,9 @@ async def screenshot_trait_sections(page):
                 div.style.maxHeight = 'none';     // 移除高度限制
                 div.style.overflowY = 'visible';  // 移除滚动条
                 div.style.height = 'auto';        // 自适应高度
-                
+
                 // [关键修改] 移除白色渐变遮罩
-                div.style.webkitMaskImage = 'none'; 
+                div.style.webkitMaskImage = 'none';
                 div.style.maskImage = 'none';
             });
 
@@ -142,7 +142,7 @@ async def screenshot_trait_sections(page):
                 condRow.style.display = 'table-row';
                 condRow.classList.remove('mw-collapsed');
             }
-            
+
             // 4. 暴力展开表格内其他可能存在的折叠行
             const allHiddenRows = document.querySelectorAll('tr.mw-collapsible.mw-collapsed');
             allHiddenRows.forEach(row => {
