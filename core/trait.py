@@ -59,18 +59,11 @@ async def find_in_mooncell_trait_2_imglist_table(keyword: str):
     # Mooncell 的属性页面通常是以 "属性：" 或 "特性：" 开头，或者直接是特性名
     # 这里建议在调用前处理一下关键词，或者直接搜索让 Wiki 重定向
     logger.info(f"[-] 正在启动浏览器搜索特性: {keyword} ...")
-    
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        # 属性表格通常比较宽，设置宽一点的视口
-        context = await browser.new_context(
-            viewport={"width": 1200, "height": 1200}, 
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        )
-        page = await context.new_page()
+        # 使用辅助函数初始化浏览器
+        browser, context, page = await init_browser(p, viewport_width=1200, viewport_height=1200)
         img_list = []
         try:
-            # 这里的 fetch_wiki_page_raw 应该返回类似 https://fgo.wiki/w/属性：秩序·善 的 URL
             result = await fetch_wiki_page_raw(keyword)
             if isinstance(result, dict) and "error" in result:
                 logger.info(f"[x] 获取 URL 失败: {result['error']}")
@@ -87,37 +80,16 @@ async def find_in_mooncell_trait_2_imglist_table(keyword: str):
 
             # 4. 页面清洗
             logger.info("[-] 正在处理页面结构...")
-            await page.evaluate("""() => {
-                const selectors = [
-                    '.ads', '#siteNotice', '#mw-panel', '#mw-head', '#footer', 
-                    '.mw-editsection', '#p-personal', '#mw-navigation', 
-                    '.mp-shadiao', 'ins.adsbygoogle', '#MenuSidebar',
-                    '#toc', '.toc' // 目录通常不需要
-                ];
-                selectors.forEach(s => {
-                    document.querySelectorAll(s).forEach(e => e.style.display = 'none');
-                });
-                
-                const content = document.querySelector('#content');
-                if(content) {
-                    content.style.marginLeft = '0px';
-                    content.style.padding = '10px';
-                }
-            }""")
+            await clean_page(page)
             
             # 5. 预滚动
-            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            await asyncio.sleep(0.5)
-            await page.evaluate("window.scrollTo(0, 0)")
-            await asyncio.sleep(0.5)
+            await pre_scroll(page)
             
             # === 执行截图任务 ===
             trait_img = await screenshot_trait_table(page)
             if trait_img:
                 img_list.append(trait_img)
-            
             logger.info("[-] 特性任务执行完毕")
-            
         except Exception as e:
             logger.info(f"[x] 发生错误: {e}")
         finally:
@@ -128,7 +100,7 @@ async def find_in_mooncell_trait_2_imglist_table(keyword: str):
 # === 截图模块：特性页面特定部分 ===
 async def screenshot_trait_sections(page):
     img_list = []
-    
+
     # --- 任务 1: 截取 [基础统计表格] (保持不变) ---
     logger.info("[-] 正在截取 [基础统计表格]...")
     try:
@@ -212,12 +184,8 @@ async def screenshot_trait_sections(page):
 async def find_in_mooncell_trait_2_imglist(keyword: str):
     logger.info(f"[-] 正在启动浏览器搜索特性: {keyword} ...")
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        context = await browser.new_context(
-            viewport={"width": 1280, "height": 1200}, # 宽度适中
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        )
-        page = await context.new_page()
+        # 使用辅助函数初始化浏览器
+        browser, context, page = await init_browser(p, viewport_width=1280, viewport_height=1200)
         img_list = []
         try:
             result = await fetch_wiki_page_raw(keyword)
@@ -228,12 +196,7 @@ async def find_in_mooncell_trait_2_imglist(keyword: str):
             await page.goto(url, wait_until="domcontentloaded", timeout=60000)
             
             # 基础页面清洗
-            await page.evaluate("""() => {
-                const selectors = ['.ads', '#siteNotice', '#mw-panel', '#mw-head', '#footer', '.mw-editsection', '#p-personal', '#mw-navigation', '.mp-shadiao', 'ins.adsbygoogle', '#MenuSidebar', '#toc'];
-                selectors.forEach(s => document.querySelectorAll(s).forEach(e => e.style.display = 'none'));
-                const content = document.querySelector('#content');
-                if(content) { content.style.marginLeft = '0px'; content.style.padding = '10px'; }
-            }""")
+            await clean_page(page)
             
             # 截图
             screenshots = await screenshot_trait_sections(page)

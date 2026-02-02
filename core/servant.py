@@ -47,15 +47,8 @@ async def find_in_mooncell_servant_2_imglist(keyword: str):
     logger.info(f"[-] 正在启动浏览器搜索: {keyword} ...")
     
     async with async_playwright() as p:
-        browser = await p.chromium.launch(
-            headless=True,
-            args=['--no-proxy-server']  # <--- 加上这一行，强制不走代理
-            )
-        context = await browser.new_context(
-            viewport={"width": 1280, "height": 1200}, 
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        )
-        page = await context.new_page()
+        # 使用辅助函数初始化浏览器
+        browser, context, page = await init_browser(p)
         img_list = []
         try:
             result = await fetch_wiki_page_raw(keyword)
@@ -74,40 +67,32 @@ async def find_in_mooncell_servant_2_imglist(keyword: str):
 
             # 4. 页面清洗与重构
             logger.info("[-] 正在处理页面结构...")
-            await page.evaluate("""() => {
-                // 1. 隐藏广告和杂项
-                const selectors = ['.ads', '#siteNotice', '#mw-panel', '#mw-head', '#footer', '.mw-editsection', '#p-personal'];
-                selectors.forEach(s => {
-                    document.querySelectorAll(s).forEach(e => e.style.display = 'none');
-                });
-                
-                const content = document.querySelector('#content');
-                if(content) content.style.marginLeft = '0px';
-
-                // 2. 强制展开所有 Tabber
+            # 先使用通用的页面清洗
+            await clean_page(page)
+            # 再执行从者页面特有的处理
+            await page.evaluate("""
+            () => {
+                // 1. 强制展开所有 Tabber
                 document.querySelectorAll('.tabber__panel').forEach(tab => {
                     tab.style.display = 'block'; 
                     tab.style.opacity = '1';
                     tab.classList.remove('tabber__panel--hidden'); 
                 });
                 
-                // 3. 移除 Tab 父容器固定高度
+                // 2. 移除 Tab 父容器固定高度
                 document.querySelectorAll('.tabber__section').forEach(sec => {
                     sec.style.height = 'auto'; 
                     sec.style.maxHeight = 'none';
                 });
 
-                // 4. 隐藏 Tab 切换按钮
+                // 3. 隐藏 Tab 切换按钮
                 document.querySelectorAll('ul.tabber__tabs').forEach(h => h.style.display = 'none');
-            }""")
+            }
+            """)
             
             # 5. 预滚动
             logger.info("[-] 正在预滚动以加载资源...")
-            for i in range(1, 4):
-                await page.evaluate(f"window.scrollTo(0, document.body.scrollHeight * {i/4})")
-                await asyncio.sleep(0.5)
-            await page.evaluate("window.scrollTo(0, 0)")
-            await asyncio.sleep(0.5)
+            await pre_scroll(page)
             
             safe_name = "".join([c for c in keyword if c.isalpha() or c.isdigit() or c in "._-"]).strip()
             

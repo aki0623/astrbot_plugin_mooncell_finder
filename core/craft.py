@@ -53,13 +53,8 @@ async def find_in_mooncell_ce_2_imglist(keyword: str):
     logger.info(f"[-] 正在启动浏览器搜索礼装: {keyword} ...")
     
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        # 礼装表格可能比较宽，视口稍微设置大一点
-        context = await browser.new_context(
-            viewport={"width": 1400, "height": 1200}, 
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        )
-        page = await context.new_page()
+        # 使用辅助函数初始化浏览器，设置更宽的视口以适应礼装表格
+        browser, context, page = await init_browser(p, viewport_width=1400, viewport_height=1200)
         img_list = []
         try:
             # 假设 fetch_wiki_page_raw 是你 base.py 里获取 Mooncell 搜索结果 URL 的函数
@@ -77,32 +72,13 @@ async def find_in_mooncell_ce_2_imglist(keyword: str):
             except:
                 logger.info("[!] 警告: 等待内容区域超时")
 
-            # 4. 页面清洗 (复用你之前的逻辑，去广告和干扰项)
+            # 4. 页面清洗
             logger.info("[-] 正在处理页面结构...")
-            await page.evaluate("""() => {
-                // 1. 隐藏广告和杂项
-                const selectors = [
-                    '.ads', '#siteNotice', '#mw-panel', '#mw-head', '#footer', 
-                    '.mw-editsection', '#p-personal', '#mw-navigation', 
-                    '.mp-shadiao', 'ins.adsbygoogle', '#MenuSidebar'
-                ];
-                selectors.forEach(s => {
-                    document.querySelectorAll(s).forEach(e => e.style.display = 'none');
-                });
-                
-                const content = document.querySelector('#content');
-                if(content) {
-                    content.style.marginLeft = '0px';
-                    content.style.padding = '10px';
-                }
-            }""")
+            await clean_page(page)
             
             # 5. 预滚动加载图片
             logger.info("[-] 正在预滚动以加载资源...")
-            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            await asyncio.sleep(1)
-            await page.evaluate("window.scrollTo(0, 0)")
-            await asyncio.sleep(0.5)
+            await pre_scroll(page)
             
             safe_name = "".join([c for c in keyword if c.isalpha() or c.isdigit() or c in "._-"]).strip()
             

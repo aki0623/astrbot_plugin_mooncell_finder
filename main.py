@@ -9,7 +9,14 @@ import io
 class MCF_plugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
-
+        # 定义一个字典，用于存储不同类型的图片列表获取函数
+        self.img_list_func_dict = {
+            "从者": servant.find_in_mooncell_servant_2_imglist,
+            "礼装": craft.find_in_mooncell_ce_2_imglist,
+            "纹章": ccode.find_in_mooncell_cc_2_imglist,
+            "特性": trait.find_in_mooncell_trait_2_imglist,
+            "特性表格": trait.find_in_mooncell_trait_2_imglist_table,
+        }
 
     async def initialize(self):
         """可选择实现异步的插件初始化方法，当实例化该插件类之后会自动调用该方法。"""
@@ -69,13 +76,13 @@ class MCF_plugin(Star):
         
     @filter.command("MCF从者")
     async def MCF_servant(self, event: AstrMessageEvent):
-        """从者查询指令,用于查询FGO相关的从者信息。""" # 这是 handler 的描述，将会被解析方便用户了解插件内容。建议填写。
-        message_str = event.message_str # 用户发的纯文本消息字符串
+        """从者查询指令,用于查询FGO相关的从者信息。""" 
+        message_str = event.message_str # 
         message_chain = event.get_messages() # 用户所发的消息的消息链 # from astrbot.api.message_components import *
         logger.info(message_chain)
         keyword = message_str.replace("MCF从者", "", 1).strip()
         if keyword:
-            image_list = await servant.find_in_mooncell_servant_2_imglist(keyword)
+            image_list = await self.img_list_func_dict["从者"](keyword)
             logger.info(f"得到image_list")
             async for msg in self._send_msg_func(event, image_list, "从者", keyword):
                 yield msg
@@ -85,13 +92,13 @@ class MCF_plugin(Star):
           
     @filter.command("MCF礼装")
     async def MCF_craft(self, event: AstrMessageEvent):
-        """礼装查询指令,用于查询FGO相关的礼装信息。""" # 这是 handler 的描述，将会被解析方便用户了解插件内容。建议填写。
-        message_str = event.message_str # 用户发的纯文本消息字符串
+        """礼装查询指令,用于查询FGO相关的礼装信息。""" 
+        message_str = event.message_str # 
         message_chain = event.get_messages() # 用户所发的消息的消息链 # from astrbot.api.message_components import *
         logger.info(message_chain)
         keyword = message_str.replace("MCF礼装", "", 1).strip()
         if keyword:
-            image_list = await craft.find_in_mooncell_ce_2_imglist(keyword)
+            image_list = await self.img_list_func_dict["礼装"](keyword)
             logger.info(f"得到image_list")
             async for msg in self._send_msg_func(event, image_list, "礼装", keyword):
                 yield msg
@@ -101,13 +108,13 @@ class MCF_plugin(Star):
     
     @filter.command("MCF纹章")
     async def MCF_ccode(self, event: AstrMessageEvent):
-        """纹章查询指令,用于查询FGO相关的纹章信息。""" # 这是 handler 的描述，将会被解析方便用户了解插件内容。建议填写。
-        message_str = event.message_str # 用户发的纯文本消息字符串
+        """纹章查询指令,用于查询FGO相关的纹章信息。""" 
+        message_str = event.message_str # 
         message_chain = event.get_messages() # 用户所发的消息的消息链 # from astrbot.api.message_components import *
         logger.info(message_chain)
         keyword = message_str.replace("MCF纹章", "", 1).strip()
         if keyword:
-            image_list = await ccode.find_in_mooncell_cc_2_imglist(keyword)
+            image_list = await self.img_list_func_dict["纹章"](keyword)
             logger.info(f"得到image_list")
             async for msg in self._send_msg_func(event, image_list, "纹章", keyword):
                 yield msg
@@ -117,15 +124,15 @@ class MCF_plugin(Star):
     
     @filter.command("MCF特性")
     async def MCF_event(self, event: AstrMessageEvent):
-        """特性查询指令,用于查询FGO相关的特性信息。""" # 这是 handler 的描述，将会被解析方便用户了解插件内容。建议填写。
-        message_str = event.message_str # 用户发的纯文本消息字符串
+        """特性查询指令,用于查询FGO相关的特性信息。""" 
+        message_str = event.message_str # 
         message_chain = event.get_messages() # 用户所发的消息的消息链 # from astrbot.api.message_components import *
         logger.info(message_chain)
         keyword = message_str.replace("MCF特性", "", 1).strip()
         if keyword:
-            image_list = await trait.find_in_mooncell_trait_2_imglist(keyword)
+            image_list = await self.img_list_func_dict["特性"](keyword)
         else:
-            image_list = await trait.find_in_mooncell_trait_2_imglist_table("属性：秩序·善")
+            image_list = await self.img_list_func_dict["特性表格"]("属性：秩序·善")    
         logger.info(f"得到image_list")
         async for msg in self._send_msg_func(event, image_list, "特性", keyword):
             yield msg
@@ -134,4 +141,4 @@ class MCF_plugin(Star):
 
     async def terminate(self):
         """可选择实现异步的插件销毁方法，当插件被卸载/停用时会调用。"""
-        logger.info("Mooncell Finder插件已停用")
+        logger.info("Mooncell Finder插件已停用。")

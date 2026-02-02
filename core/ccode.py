@@ -59,13 +59,8 @@ async def find_in_mooncell_cc_2_imglist(keyword: str):
     logger.info(f"[-] 正在启动浏览器搜索纹章: {keyword} ...")
     
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        # 纹章表格宽度适中，标准宽度即可
-        context = await browser.new_context(
-            viewport={"width": 1200, "height": 1200}, 
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        )
-        page = await context.new_page()
+        # 使用辅助函数初始化浏览器
+        browser, context, page = await init_browser(p, viewport_width=1200, viewport_height=1200)
         img_list = []
         try:
             # 获取 URL (假设复用之前的 fetch_wiki_page_raw 逻辑)
@@ -85,29 +80,10 @@ async def find_in_mooncell_cc_2_imglist(keyword: str):
 
             # 4. 页面清洗 (隐藏广告和无关元素)
             logger.info("[-] 正在处理页面结构...")
-            await page.evaluate("""() => {
-                const selectors = [
-                    '.ads', '#siteNotice', '#mw-panel', '#mw-head', '#footer', 
-                    '.mw-editsection', '#p-personal', '#mw-navigation', 
-                    '.mp-shadiao', 'ins.adsbygoogle', '#MenuSidebar',
-                    '.mw-indicators', '#jump-to-nav'
-                ];
-                selectors.forEach(s => {
-                    document.querySelectorAll(s).forEach(e => e.style.display = 'none');
-                });
-                
-                const content = document.querySelector('#content');
-                if(content) {
-                    content.style.marginLeft = '0px';
-                    content.style.padding = '10px';
-                }
-            }""")
+            await clean_page(page)
             
             # 5. 预滚动加载图片
-            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            await asyncio.sleep(0.5)
-            await page.evaluate("window.scrollTo(0, 0)")
-            await asyncio.sleep(0.5)
+            await pre_scroll(page)
             
             safe_name = "".join([c for c in keyword if c.isalpha() or c.isdigit() or c in "._-"]).strip()
             
