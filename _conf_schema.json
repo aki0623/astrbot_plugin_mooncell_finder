@@ -8,30 +8,20 @@
           "type": "string",
           "default": "MCF从者"
         },
-        "servant_new": {
-          "description": "从者查询(新版Wiki)命令前缀",
+        "ce": {
+          "description": "礼装查询命令前缀",
           "type": "string",
-          "default": "MCF从者new"
+          "default": "MCF礼装"
         },
         "cc": {
           "description": "纹章查询命令前缀",
           "type": "string",
           "default": "MCF纹章"
         },
-        "ce": {
-          "description": "礼装查询命令前缀",
-          "type": "string",
-          "default": "MCF礼装"
-        },
         "trait": {
           "description": "特性查询命令前缀",
           "type": "string",
           "default": "MCF特性"
-        },
-        "test": {
-          "description": "测试命令前缀",
-          "type": "string",
-          "default": "MCF测试"
         }
     }
   }

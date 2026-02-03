@@ -13,7 +13,6 @@ if "" in sys.path:
     sys.path.remove("") # 临时移除当前目录，防止干扰
 from PIL import Image as LibImage
 
-
 # === 辅助函数：处理 URL ===
 def filt_url(results):
     """
@@ -88,11 +87,11 @@ async def init_browser(playwright, viewport_width=1280, viewport_height=1200):
     """
     browser = await playwright.chromium.launch(
         headless=True,
-        args=["--no-proxy-server"]
+        args=["--no-proxy-server"],
     )
     context = await browser.new_context(
         viewport={"width": viewport_width, "height": viewport_height},
-        user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     )
     page = await context.new_page()
     return browser, context, page

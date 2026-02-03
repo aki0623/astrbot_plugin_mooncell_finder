@@ -1,62 +1,105 @@
-# MOONCELL Finder for Astrbot
+# MOONCELL Finder（FGO-WIKI 搜索）
 
-AstrBot 插件，用于查询 FGO 相关的从者、礼装、纹章和特性信息。
-## 说明：
-本插件仍然处于测试阶段，请您谨慎使用。
-后续将着重在 功能实现的安全性、代码规范性等方面进行完善
+AstrBot 插件，基于 [FGO Wiki（Mooncell）](https://fgo.wiki) 查询《Fate/Grand Order》的从者、礼装、纹章与特性信息，并以合并转发消息的形式返回截图结果。
+
+> **说明**：本插件仍处于测试阶段，请谨慎使用。后续将着重完善功能安全性及代码规范性。
+
+---
 
 ## 功能特性
 
-- **从者查询**：通过命令查询 FGO 从者的详细信息
-- **礼装查询**：通过命令查询 FGO 礼装的详细信息
-- **纹章查询**：通过命令查询 FGO 纹章的详细信息
-- **特性查询**：通过命令查询 FGO 特性的详细信息，支持特性一览表格
-- **图片展示**：查询结果以图片形式通过合并转发的方式发送给用户
+| 功能     | 说明 |
+|----------|------|
+| **从者查询** | 按名称查询从者详情（含基础数值、宝具等） |
+| **礼装查询** | 按名称查询概念礼装详情 |
+| **纹章查询** | 按名称查询指令纹章详情 |
+| **特性查询** | 按名称查询特性详情，或发送特性一览表格 |
+| **结果展示** | 查询结果以网页截图图片形式，通过合并转发消息发送 |
+
+---
+
+## 安装与依赖
+
+- 需已安装 [AstrBot](https://docs.astrbot.app/) 并正常运行。
+- 本插件依赖 **Playwright** 进行页面渲染与截图，首次使用前请安装浏览器：
+
+  ```bash
+  playwright install chromium
+  ```
+
+- 其余依赖见 `requirements.txt`（由 AstrBot 或插件环境管理时一般会自动安装）。
+
+---
 
 ## 使用方法
 
+### 默认命令格式
 
-### 命令格式
+| 类型   | 命令格式 | 示例 |
+|--------|----------|------|
+| 从者   | `MCF从者 [从者名称]` | `MCF从者 C呆` |
+| 礼装   | `MCF礼装 [礼装名称]` | `MCF礼装 经典纹章巧克力` |
+| 纹章   | `MCF纹章 [纹章名称]` | `MCF纹章 皇家兔女郎` |
+| 特性   | `MCF特性 [特性名称]` 或 `MCF特性` | `MCF特性 秩序·善` / `MCF特性`（特性一览） |
 
-- **从者查询**：`MCF从者 [从者名称]`
-- **礼装查询**：`MCF礼装 [礼装名称]`
-- **纹章查询**：`MCF纹章 [纹章名称]`
-- **特性查询**：`MCF特性 [特性名称]` 或 `MCF特性`（查询特性一览表格）
+- 带参数时：查询对应关键词的详情并返回截图。
+- **特性**：仅发送 `MCF特性` 时，返回特性一览表格截图。
 
-### 使用示例
+### 自定义命令前缀
 
-- `MCF从者 C呆`：查询C呆的详细信息
-- `MCF礼装 经典纹章巧克力`：查询经典纹章巧克力礼装的详细信息
-- `MCF纹章 皇家兔女郎`：查询皇家兔女郎纹章的详细信息
-- `MCF特性 秩序·善`：查询秩序·善特性的详细信息
-- `MCF特性`：查询特性一览表格
+在 AstrBot 的插件配置中，可为各功能设置自定义命令前缀（见下方「配置」），未填写时使用上表中的默认前缀。
 
-## 插件结构
+---
+
+## 配置
+
+插件支持在 AstrBot 配置界面中修改「子配置」`sub_config`，用于自定义命令前缀：
+
+| 配置项   | 说明               | 默认值   |
+|----------|--------------------|----------|
+| `servant` | 从者查询命令前缀   | `MCF从者` |
+| `ce`      | 礼装查询命令前缀   | `MCF礼装` |
+| `cc`      | 纹章查询命令前缀   | `MCF纹章` |
+| `trait`   | 特性查询命令前缀   | `MCF特性` |
+
+配置结构参见 `_conf_schema.json`。
+
+---
+
+## 项目结构
 
 ```
 astrbot_plugin_mooncell_finder/
 ├── core/
-│   ├── base.py
-│   ├── ccode.py      # 纹章查询相关功能
-│   ├── craft.py      # 礼装查询相关功能
-│   ├── servant.py    # 从者查询相关功能
-│   └── trait.py      # 特性查询相关功能
-├── .gitignore
-├── LICENSE
-├── README.md
-├── environment.yml
-├── main.py          # 插件主入口
+│   ├── base.py      # 公共逻辑：Wiki API 搜索、浏览器初始化、页面截图等
+│   ├── ccode.py     # 纹章（Command Code）查询
+│   ├── craft.py     # 礼装（Craft Essence）查询
+│   ├── servant.py   # 从者查询
+│   └── trait.py     # 特性查询与特性一览
+├── main.py          # 插件入口：命令注册与消息处理
+├── _conf_schema.json # 配置项定义
 ├── metadata.yaml    # 插件元数据
-└── requirements.txt
+├── requirements.txt
+├── environment.yml
+├── LICENSE
+└── README.md
 ```
+
+---
 
 ## 插件信息
 
-- **名称**：astrbot_plugin_mooncell_finder
-- **版本**：v0.9
-- **作者**：akidesuwa
-- **描述**：MOONCELL机器人
+| 项目   | 内容 |
+|--------|------|
+| 名称   | astrbot_plugin_mooncell_finder |
+| 展示名 | FGO-WIKI_MOONCELL搜索 |
+| 版本   | v0.9 |
+| 作者   | akidesuwa |
+| 仓库   | [GitHub](https://github.com/aki0623/astrbot_plugin_mooncell_finder) |
 
-## 支持
+---
 
-- [插件开发文档](https://docs.astrbot.app/dev/star/plugin-new.html)
+## 参考
+
+- [AstrBot 插件开发文档](https://docs.astrbot.app/dev/star/plugin-new.html)
+- [FGO Wiki（Mooncell）](https://fgo.wiki)
