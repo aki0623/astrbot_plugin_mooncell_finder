@@ -86,16 +86,35 @@ def _is_browser_not_installed_error(e: Exception) -> bool:
     )
 
 
+# === 辅助：判断是否为「缺系统库」类异常 ===
+def _is_system_deps_missing_error(e: Exception) -> bool:
+    """
+    判断是否为缺系统依赖导致的启动失败。
+    匹配异常信息或 Playwright 日志中的：cannot open shared object file、libnspr4、
+    Error while loading shared libraries；或 TargetClosedError 且消息里含上述字样。
+    """
+    msg = str(e).lower()
+    keywords = (
+        "cannot open shared object file",
+        "libnspr4",
+        "error while loading shared libraries",
+    )
+    return any(k in msg for k in keywords) or (
+        type(e).__name__ == "TargetClosedError" and any(k in msg for k in keywords)
+    )
+
+
 # === 辅助函数：浏览器初始化 ===
 async def init_browser(playwright, viewport_width=1280, viewport_height=1200):
     """
-    初始化浏览器实例。若检测到 Chromium 未安装，会先自动安装再重试一次 launch。
+    初始化浏览器实例。
+    若 Chromium 未安装则自动安装并重试一次；若缺系统库则尝试 install-deps 并重试一次（只重试一次）。
     :param playwright: playwright 实例
     :param viewport_width: 视口宽度
     :param viewport_height: 视口高度
     :return: browser, context, page
     """
-    from .playwright_install import install_playwright_chromium_sync
+    from .playwright_install import install_playwright_chromium_sync, install_playwright_deps
 
     async def _launch():
         return await playwright.chromium.launch(
@@ -103,22 +122,36 @@ async def init_browser(playwright, viewport_width=1280, viewport_height=1200):
             args=["--no-proxy-server"],
         )
 
+    browser = None
     try:
         browser = await _launch()
     except Exception as e:
-        if not _is_browser_not_installed_error(e):
+        if _is_browser_not_installed_error(e):
+            logger.info("检测到 Playwright Chromium 未安装，正在自动安装…")
+            ok = await asyncio.to_thread(
+                install_playwright_chromium_sync,
+                capture_output=False,
+                timeout=300,
+            )
+            if not ok:
+                raise RuntimeError(
+                    "Playwright Chromium 自动安装失败，请手动执行: python -m playwright install chromium"
+                ) from e
+            browser = await _launch()
+        elif _is_system_deps_missing_error(e):
+            logger.info("检测到缺系统库，正在尝试安装系统依赖…")
+            ok = await install_playwright_deps(capture_output=False, try_sudo=True)
+            if not ok:
+                raise RuntimeError(
+                    "Playwright 系统依赖安装失败，请在本机执行: python -m playwright install-deps chromium"
+                ) from e
+            # 只重试一次
+            browser = await _launch()
+        else:
             raise
-        logger.info("检测到 Playwright Chromium 未安装，正在自动安装…")
-        ok = await asyncio.to_thread(
-            install_playwright_chromium_sync,
-            capture_output=False,
-            timeout=300,
-        )
-        if not ok:
-            raise RuntimeError(
-                "Playwright Chromium 自动安装失败，请手动执行: python -m playwright install chromium"
-            ) from e
-        browser = await _launch()
+
+    if browser is None:
+        raise RuntimeError("Playwright Chromium 启动失败")
 
     context = await browser.new_context(
         viewport={"width": viewport_width, "height": viewport_height},

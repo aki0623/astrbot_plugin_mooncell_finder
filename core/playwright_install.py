@@ -119,3 +119,71 @@ async def ensure_playwright_chromium(
         capture_output=capture_output,
         timeout=timeout,
     )
+
+
+# --- 系统依赖（install-deps）---
+
+def install_playwright_deps_sync(
+    *,
+    capture_output: bool = False,
+    timeout: Optional[int] = 120,
+    try_sudo: bool = True,
+) -> bool:
+    """
+    同步执行：python -m playwright install-deps chromium。
+    在 Linux 上会调 apt 等，需要 root；插件里只能「尝试运行」，不能替用户拿到 root。
+
+    :param capture_output: True 时隐藏输出，False 时输出到用户。
+    :param timeout: 超时秒数，None 表示不限制。
+    :param try_sudo: 若首次（无 sudo）返回非 0，是否再试 sudo。在无 TTY 环境下 sudo 可能卡住要密码，需权衡。
+    :return: 是否成功（returncode == 0）。
+    """
+    cmd = [sys.executable, "-m", "playwright", "install-deps", "chromium"]
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=capture_output,
+            timeout=timeout,
+        )
+        if result.returncode == 0:
+            logger.info("Playwright 系统依赖（Chromium）安装完成。")
+            return True
+        if try_sudo:
+            logger.info("无 root 权限，尝试 sudo 安装系统依赖…")
+            result_sudo = subprocess.run(
+                ["sudo"] + cmd,
+                capture_output=capture_output,
+                timeout=timeout,
+            )
+            if result_sudo.returncode == 0:
+                logger.info("Playwright 系统依赖（Chromium）安装完成。")
+                return True
+        logger.warning("Playwright 系统依赖安装失败，请在本机执行: python -m playwright install-deps chromium")
+        return False
+    except subprocess.TimeoutExpired:
+        logger.warning("Playwright 系统依赖安装超时。")
+        return False
+    except FileNotFoundError:
+        logger.warning("未找到 Python 或 playwright 模块。")
+        return False
+    except Exception as e:
+        logger.warning(f"Playwright 系统依赖安装异常: {e}")
+        return False
+
+
+async def install_playwright_deps(
+    *,
+    capture_output: bool = False,
+    timeout: Optional[int] = 120,
+    try_sudo: bool = True,
+) -> bool:
+    """
+    异步执行 install-deps，不阻塞事件循环。
+    内部使用 asyncio.to_thread(install_playwright_deps_sync, ...)。
+    """
+    return await asyncio.to_thread(
+        install_playwright_deps_sync,
+        capture_output=capture_output,
+        timeout=timeout,
+        try_sudo=try_sudo,
+    )
