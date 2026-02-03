@@ -1,7 +1,7 @@
 import io
 
 from astrbot.api import logger
-from astrbot.api.event import AstrMessageEvent, filter
+from astrbot.api.event import AstrMessageEvent
 from astrbot.api.message_components import Node, Nodes, Plain
 from astrbot.api.star import Context, Star, register
 from astrbot.core.message.components import Image
@@ -12,11 +12,29 @@ from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 from .core.base import *
 from bs4 import BeautifulSoup, Tag
+from astrbot.api import AstrBotConfig
+
+# 与 _conf_schema.json 中 sub_config 的 default 保持一致，仅当配置为空时使用
+DEFAULT_CMD_PREFIXES = {
+    "servant": "MCF从者",
+    "servant_new": "MCF从者new",
+    "cc": "MCF纹章",
+    "ce": "MCF礼装",
+    "trait": "MCF特性",
+    "test": "MCF测试",
+}
 
 @register("Mooncell Finder", "akidesuwa", "mooncell 网页查询", "0.9")
 class MCF_plugin(Star):
-    def __init__(self, context: Context):
+    def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
+        self.config = config
+        # 从 config 只读获取自定义命令前缀（空串时使用 schema 默认值）
+        sub = config.get("sub_config") or {}
+        self._prefixes = {
+            k: (sub.get(k) or DEFAULT_CMD_PREFIXES.get(k, ""))
+            for k in DEFAULT_CMD_PREFIXES
+        }
         # 定义一个字典，用于存储不同类型的图片列表获取函数
         self.img_list_func_dict = {
             "从者": servant.find_in_mooncell_servant_2_imglist,
@@ -44,6 +62,7 @@ class MCF_plugin(Star):
                         "device_scale_factor": 2, # 2倍缩放，图片更清晰
                         "element": ".wikitable"
                     }
+        
     async def _replace_img_to_b64(self, client, element):
         """
         遍历 element 中的所有 img 标签，下载图片并转换为 base64 嵌入
@@ -256,6 +275,21 @@ class MCF_plugin(Star):
     
     async def initialize(self):
         """可选择实现异步的插件初始化方法，当实例化该插件类之后会自动调用该方法。"""
+        # 按配置中的命令前缀注册指令（仅读取 config，不修改）
+        star_name = "Mooncell Finder"
+        cmd_handlers = [
+            ("servant", self.MCF_servant, "从者查询"),
+            ("servant_new", self.MCF_servant_new, "从者查询(新版Wiki)"),
+            ("ce", self.MCF_craft, "礼装查询"),
+            ("cc", self.MCF_ccode, "纹章查询"),
+            ("trait", self.MCF_event, "特性查询"),
+        ]
+        for key, handler, desc in cmd_handlers:
+            prefix = self._prefixes.get(key, "")
+            if prefix:
+                self.context.register_commands(
+                    star_name, prefix, desc, 5, handler,
+                )
         logger.info("Mooncell Finder插件已初始化")
 
     async def fetch_wiki_htmls_servant(self, url: str):
@@ -513,13 +547,13 @@ class MCF_plugin(Star):
         yield event.chain_result([merge_forward_message])
         yield event.plain_result("查找完毕。")
 
-    @filter.command("MCF从者")
     async def MCF_servant(self, event: AstrMessageEvent):
         """从者查询指令,用于查询FGO相关的从者信息。"""
-        message_str = event.message_str #
-        message_chain = event.get_messages() # 用户所发的消息的消息链 # from astrbot.api.message_components import *
+        prefix = self._prefixes.get("servant", "MCF从者")
+        message_str = event.message_str
+        message_chain = event.get_messages()
         logger.info(message_chain)
-        keyword = message_str.replace("MCF从者", "", 1).strip()
+        keyword = message_str.replace(prefix, "", 1).strip()
         if keyword:
             image_list = await self.img_list_func_dict["从者"](keyword)
             logger.info("得到image_list")
@@ -529,13 +563,13 @@ class MCF_plugin(Star):
         else:
             yield event.plain_result("从者查询关键词不可为空。")
 
-    @filter.command("MCF从者new")
     async def MCF_servant_new(self, event: AstrMessageEvent):
         """从者查询指令,用于查询FGO相关的从者信息。"""
-        message_str = event.message_str #
-        message_chain = event.get_messages() # 用户所发的消息的消息链 # from astrbot.api.message_components import *
+        prefix = self._prefixes.get("servant_new", "MCF从者new")
+        message_str = event.message_str
+        message_chain = event.get_messages()
         logger.info(message_chain)
-        keyword = message_str.replace("MCF从者new", "", 1).strip()
+        keyword = message_str.replace(prefix, "", 1).strip()
         if keyword:
             logger.info(f"[-] 正在启动浏览器搜索: {keyword} ...")
             async with async_playwright() as p:
@@ -566,13 +600,13 @@ class MCF_plugin(Star):
                 finally:
                     await browser.close()
 
-    @filter.command("MCF礼装")
     async def MCF_craft(self, event: AstrMessageEvent):
         """礼装查询指令,用于查询FGO相关的礼装信息。"""
-        message_str = event.message_str #
-        message_chain = event.get_messages() # 用户所发的消息的消息链 # from astrbot.api.message_components import *
+        prefix = self._prefixes.get("ce", "MCF礼装")
+        message_str = event.message_str
+        message_chain = event.get_messages()
         logger.info(message_chain)
-        keyword = message_str.replace("MCF礼装", "", 1).strip()
+        keyword = message_str.replace(prefix, "", 1).strip()
         if keyword:
             image_list = await self.img_list_func_dict["礼装"](keyword)
             logger.info("得到image_list")
@@ -582,13 +616,13 @@ class MCF_plugin(Star):
         else:
             yield event.plain_result("礼装查询关键词不可为空。")
 
-    @filter.command("MCF纹章")
     async def MCF_ccode(self, event: AstrMessageEvent):
         """纹章查询指令,用于查询FGO相关的纹章信息。"""
-        message_str = event.message_str #
-        message_chain = event.get_messages() # 用户所发的消息的消息链 # from astrbot.api.message_components import *
+        prefix = self._prefixes.get("cc", "MCF纹章")
+        message_str = event.message_str
+        message_chain = event.get_messages()
         logger.info(message_chain)
-        keyword = message_str.replace("MCF纹章", "", 1).strip()
+        keyword = message_str.replace(prefix, "", 1).strip()
         if keyword:
             image_list = await self.img_list_func_dict["纹章"](keyword)
             logger.info("得到image_list")
@@ -598,13 +632,13 @@ class MCF_plugin(Star):
         else:
             yield event.plain_result("纹章查询关键词不可为空。")
 
-    @filter.command("MCF特性")
     async def MCF_event(self, event: AstrMessageEvent):
         """特性查询指令,用于查询FGO相关的特性信息。"""
-        message_str = event.message_str #
-        message_chain = event.get_messages() # 用户所发的消息的消息链 # from astrbot.api.message_components import *
+        prefix = self._prefixes.get("trait", "MCF特性")
+        message_str = event.message_str
+        message_chain = event.get_messages()
         logger.info(message_chain)
-        keyword = message_str.replace("MCF特性", "", 1).strip()
+        keyword = message_str.replace(prefix, "", 1).strip()
         if keyword:
             image_list = await self.img_list_func_dict["特性"](keyword)
         else:
