@@ -1,3 +1,4 @@
+import asyncio
 import io
 
 from astrbot.api import logger
@@ -39,10 +40,16 @@ class MCF_plugin(Star):
     
     async def initialize(self):
         """可选择实现异步的插件初始化方法，当实例化该插件类之后会自动调用该方法。"""
-        # 插件加载时确保 Playwright Chromium 已安装（未安装则自动安装）
-        from .core.playwright_install import ensure_playwright_chromium
+        # 仅做轻量级检查：未安装时只打日志，不在此处 await 安装，避免插件加载超时
+        from .core.playwright_install import is_chromium_installed, ensure_playwright_chromium
 
-        await ensure_playwright_chromium(capture_output=False)
+        if not await is_chromium_installed():
+            logger.info(
+                "Playwright Chromium 未安装；首次使用从者/礼装等命令时将自动安装。"
+                "若命令报错可稍后再试。正在后台尝试预安装…"
+            )
+            # 后台预安装，不 await，避免阻塞插件加载
+            asyncio.create_task(ensure_playwright_chromium(capture_output=False))
 
         # 按配置中的命令前缀注册指令（仅读取 config，不修改）
         star_name = "Mooncell Finder"

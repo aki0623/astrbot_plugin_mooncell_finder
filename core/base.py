@@ -76,19 +76,50 @@ def locator_finder(page,key1,key2):
     else:
         return None
 
+# === 辅助：判断是否为「浏览器未安装」类异常 ===
+def _is_browser_not_installed_error(e: Exception) -> bool:
+    """Playwright 未安装 Chromium 时通常报 Executable doesn't exist / Failed to launch 等。"""
+    msg = str(e).lower()
+    return (
+        "executable" in msg and ("doesn't exist" in msg or "not found" in msg)
+        or "failed to launch" in msg and "chromium" in msg
+    )
+
+
 # === 辅助函数：浏览器初始化 ===
 async def init_browser(playwright, viewport_width=1280, viewport_height=1200):
     """
-    初始化浏览器实例
+    初始化浏览器实例。若检测到 Chromium 未安装，会先自动安装再重试一次 launch。
     :param playwright: playwright 实例
     :param viewport_width: 视口宽度
     :param viewport_height: 视口高度
     :return: browser, context, page
     """
-    browser = await playwright.chromium.launch(
-        headless=True,
-        args=["--no-proxy-server"],
-    )
+    from .playwright_install import install_playwright_chromium_sync
+
+    async def _launch():
+        return await playwright.chromium.launch(
+            headless=True,
+            args=["--no-proxy-server"],
+        )
+
+    try:
+        browser = await _launch()
+    except Exception as e:
+        if not _is_browser_not_installed_error(e):
+            raise
+        logger.info("检测到 Playwright Chromium 未安装，正在自动安装…")
+        ok = await asyncio.to_thread(
+            install_playwright_chromium_sync,
+            capture_output=False,
+            timeout=300,
+        )
+        if not ok:
+            raise RuntimeError(
+                "Playwright Chromium 自动安装失败，请手动执行: python -m playwright install chromium"
+            ) from e
+        browser = await _launch()
+
     context = await browser.new_context(
         viewport={"width": viewport_width, "height": viewport_height},
         user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",

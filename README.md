@@ -21,12 +21,9 @@ AstrBot 插件，基于 [FGO Wiki（Mooncell）](https://fgo.wiki) 查询《Fate
 ## 安装与依赖
 
 - 需已安装 [AstrBot](https://docs.astrbot.app/) 并正常运行。
-- 本插件依赖 **Playwright** 进行页面渲染与截图，首次使用前请安装浏览器：
-
-  ```bash
-  playwright install chromium
-  ```
-
+- 本插件依赖 **Playwright Chromium** 进行页面渲染与截图：
+  - **自动安装**：插件加载时仅做轻量检查，不会阻塞启动。若检测到未安装，会在后台尝试预安装；**首次使用**从者/礼装/纹章/特性命令时，若启动失败会自动安装并重试。若命令仍报错，可**稍后再试**或手动执行下方命令。
+  - **手动安装**（可选）：`python -m playwright install chromium`
 - 其余依赖见 `requirements.txt`（由 AstrBot 或插件环境管理时一般会自动安装）。
 
 ---
