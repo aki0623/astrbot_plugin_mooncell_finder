@@ -1,17 +1,10 @@
 import asyncio
 import io
-import sys
 
 import httpx
+from PIL import Image as LibImage
 
 from astrbot.api import logger
-
-# 1. 先保存原始路径，确保能找到真正的第三方库
-original_path = sys.path.copy()
-# 2. 导入真正的 Pillow 库并起别名
-if "" in sys.path:
-    sys.path.remove("") # 临时移除当前目录，防止干扰
-from PIL import Image as LibImage
 
 # === 辅助函数：处理 URL ===
 def filt_url(results):
